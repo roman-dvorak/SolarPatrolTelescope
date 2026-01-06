@@ -52,17 +52,16 @@ class TelescopePatrolaCtrl(AromNode):
         self.iris_zmena = False
         self.operation = []
 
-        
         self.set_feature('external',  {'feature': __file__+'.feature.hbs', 'id': 'motor_focus', 'name': 'Motor Ostreni', 'node_name': node_name, 'toppic': node_name+'/motor_focus', 'iris_range': self.conf['iris']['range'], 'focus_range': self.conf['focus']['range']})
         self.set_feature('hbstep_status__0',  {'id': 'motor_focus', 'name': 'Motor Ostreni', 'node_name': node_name, 'toppic': node_name+'/motor_focus'})
         self.set_feature('hbstep_status__1',  {'id': 'motor_clona', 'name': 'Motor Clona', 'node_name': node_name, 'toppic': node_name+'/motor_clona'})
-        
+
         print "AXIS::::", node_name[1:]
         self.motor_a = axis.axis(SPI = self.pymlab, SPI_CS = self.conf['focus']['pin'], Direction = True, StepsPerUnit = 1, protocol = 'arom', arom_spi_name = self.conf['spi'])
         self.motor_a.Setup(MAX_SPEED = self.conf['focus']['speed'],
-                       KVAL_ACC=0.6,
-                       KVAL_RUN=0.6,
-                       KVAL_DEC=0.6,
+                       KVAL_ACC=self.conf['focus'].get('kval_acc', 0.6),
+                       KVAL_RUN=self.conf['focus'].get('kval_run', 0.6),
+                       KVAL_DEC=self.conf['focus'].get('kval_dec', 0.6),
                        ACC = 100,
                        DEC = 500,
                        FS_SPD=3000,

@@ -12,6 +12,7 @@ import zmq
 import solar_patrol_telescope.msg
 from arom_helper import AromNode
 
+def sign(x): return 1 if x >= 0 else -1
 
 class SolarLab(AromNode):
     node_name = "mount"
@@ -32,6 +33,8 @@ class SolarLab(AromNode):
         self.run = True
         self.time_scale = 1
         self.update_scaling_last = 0
+        self.update_scaling_last_timeval = 0
+        self.update_scaling_last_dec = 0
 
         self.ra_range = [100, 30000]
         self.dec_range = [100, 30000]
@@ -43,7 +46,7 @@ class SolarLab(AromNode):
 
         AromNode.__init__(self)
         node_name = rospy.get_name()
-        print(node_name)
+        print("Nodename", node_name)
 
         print("config file:", '/home/odroid/config'+node_name+'.json')
         self.config_file = '/home/odroid/config'+node_name+'.json'
@@ -131,15 +134,23 @@ class SolarLab(AromNode):
                     if 'move;' in msg:
                         time_val = float(msg.split(';')[1])
                         dec = float(msg.split(';')[2])
-                        print("prikaz pro trackovani", msg, time_val, dec)
+                        #print("prikaz pro trackovani - move", time_val, dec)
                         self.tracking = 1+time_val
                         self.time_scale = 1+time_val
                         sval = abs(int(self.conf['time']['speed_solar'] * 67.106 * self.time_scale))
-                        self.motor_time.Run(1, int(time_val), speed_value = int(sval))
                         self.update_scaling_last = time.time()
 
-                        self.motor_dec.Run(1, int(dec))
-                        print("nastaveno")
+                        if(self.update_scaling_last_timeval != time_val):
+                            print("Upraven hodinovy stroj", self.tracking, sval)
+                            self.motor_time.Run(sign(time_val), int(time_val), speed_value = int(sval))
+
+                        if(self.update_scaling_last_dec != dec or (self.update_scaling_last_dec == dec and not self.motor_dec_status['SPEED'])):
+                            print("Upravena DEC rychlost", dec)
+                            self.motor_dec.Run(sign(dec), int(dec))
+
+                        self.update_scaling_last_timeval = time_val
+                        self.update_scaling_last_dec = dec
+
 
                     if 'move_left' in msg:
                         self.operation.append("RA_M1")
@@ -163,6 +174,9 @@ class SolarLab(AromNode):
                     print("dlouho neprisel zadny pozadavek.. Vypinam trackovani")
                     self.time_scale = 1
                     self.update_scaling_last = 0
+
+                    self.update_scaling_last_timeval = 0
+                    self.update_scaling_last_dec = 0
 
                     sval = abs(int(self.conf['time']['speed_solar'] * 67.106 * self.time_scale))
                     self.motor_time.Run(1, self.conf['time']['speed_solar'], speed_value = sval)
