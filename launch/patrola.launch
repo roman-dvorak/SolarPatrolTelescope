@@ -7,5 +7,6 @@
   <node name="telescope_2" pkg="solar_patrol_telescope" type="telescope_ctrl"/>
   <!--<node name="telescope_3" pkg="solar_patrol_telescope" type="telescope_ctrl"/>-->
   <node name="mount" pkg="solar_patrol_telescope" type="mount"/>
-  <node name="telescope_caps" pkg="solar_patrol_telescope" type="telescope_caps"/>
+  <!--<node name="telescope_caps" pkg="solar_patrol_telescope" type="telescope_caps"/>-->
+  <node name="patrola_caps" pkg="solar_patrol_telescope" type="telescope_caps"/>
 </launch>

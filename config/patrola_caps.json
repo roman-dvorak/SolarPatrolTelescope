@@ -1,13 +1,13 @@
 {
     "frequency": 50,
     "0": {
-        "open": 8.0,
-        "close": 3.5,
-        "name": "Nula"
+        "open": 8.5,
+        "close": 2.2,
+        "name": "Continuum"
     },
     "1": {
         "open": 8.0,
         "close": 3.5,
-        "name": "Jednicka"
+        "name": "Ha"
     }
 }

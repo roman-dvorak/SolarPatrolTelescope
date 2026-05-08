@@ -67,11 +67,34 @@ class TelescopePatrolaCtrl(AromNode):
 
     def set_cap(self, cap, position):
         print("set cap:", cap, position)
-        if position: value = self.conf[str(cap)]['open']
-        else: value = self.conf[str(cap)]['close']
+        if position: target = self.conf[str(cap)]['open']
+        else: target = self.conf[str(cap)]['close']
 
-        self.pymlab(device="pwm", method="set_pwm0", parameters=str(dict(frequency = 50, duty = 100.0-value)))
+        # Determine start value from current position
+        current_pos = self.conf[str(cap)]['position']
+        if current_pos: start = self.conf[str(cap)]['open']
+        else: start = self.conf[str(cap)]['close']
+
+        # Sweep from start to target in steps
+        step = 0.5
         self.pymlab(device="pwm", method="set_ls0", parameters=str(dict(mode = 0b10 << 2*int(cap))))
+        #self.pymlab(device="pwm", method="set_pwm0", parameters=str(dict(frequency = 50, duty = 100.0-val)))
+        if abs(target - start) > step:
+            direction = 1 if target > start else -1
+            steps = int(abs(target - start) / step)
+            print("steps:", steps)
+            for i in range(1, steps):
+                val = start + direction * i * step
+                self.pymlab(device="pwm", method="set_pwm0", parameters=str(dict(frequency = 50, duty = 100.0-val)))
+                #self.pymlab(device="pwm", method="set_ls0", parameters=str(dict(mode = 0b10 << 2*int(cap))))
+                time.sleep(0.1)
+                #self.pymlab(device="pwm", method="set_ls0", parameters=str(dict(mode = 0b0)))
+                #time.sleep(0.1)
+
+        # Set final position
+        self.pymlab(device="pwm", method="set_pwm0", parameters=str(dict(frequency = 50, duty = 100.0-target)))
+        self.pymlab(device="pwm", method="set_ls0", parameters=str(dict(mode = 0b10 << 2*int(cap))))
+        print("PWM", 100-target)
         time.sleep(0.2)
         self.pymlab(device="pwm", method="set_ls0", parameters=str(dict(mode = 0b0)))
         self.conf[str(cap)]['position'] = position
