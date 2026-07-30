@@ -18,6 +18,8 @@ class SolarLab(AromNode):
     node_type = "mount"
     node_pymlab = True
 
+    RA_JOG_VIA_TIME = True  # True: RA_M1/RA_P1 meni rychlost casove osy; False: puvodni RA motor (GoToDir)
+
     def __init__(self):
         print os.path.dirname(os.path.realpath(__file__))
         print os.getcwd()
@@ -53,6 +55,9 @@ class SolarLab(AromNode):
         print(self.conf)
         self.ra_range = self.conf['ra']['range']
         self.dec_range = self.conf['dec']['range']
+
+        self.ra_jog = 0
+        self.ra_jog_delta = abs(float(self.conf['time'].get('ra_jog_delta', self.conf['time']['speed_solar'])))
 
 
         print("nastavit konfiguraci pro gpio")
@@ -159,7 +164,7 @@ class SolarLab(AromNode):
                     # self.operation.append("update_scaling")
                     # print "ha"
 
-                if self.update_scaling_last and (self.update_scaling_last + 5) < time.time():
+                if not self.ra_jog and self.update_scaling_last and (self.update_scaling_last + 5) < time.time():
                     print("dlouho neprisel zadny pozadavek.. Vypinam trackovani")
                     self.time_scale = 1
                     self.update_scaling_last = 0
@@ -174,14 +179,22 @@ class SolarLab(AromNode):
                     print req
 
                     if 'RA_M1' == req:
-                        print "RA - dolu ON", self.ra_range[1]
-                        #self.motor_ra.Run(0, 100*self.speed_mode)
-                        self.motor_ra.GoToDir(self.ra_range[1], direction = 1)
+                        if self.RA_JOG_VIA_TIME:
+                            self.ra_jog = -1
+                            self.time_run(self.conf['time']['speed_solar'] - self.speed_mode * self.ra_jog_delta)
+                        else:
+                            print "RA - dolu ON", self.ra_range[1]
+                            #self.motor_ra.Run(0, 100*self.speed_mode)
+                            self.motor_ra.GoToDir(self.ra_range[1], direction = 1)
 
                     elif 'RA_P1' == req:
-                        print "RA - nahoru ON", self.ra_range[0]
-                        #self.motor_ra.Run(1, 100*self.speed_mode)
-                        self.motor_ra.GoToDir(self.ra_range[0], direction = 0)
+                        if self.RA_JOG_VIA_TIME:
+                            self.ra_jog = +1
+                            self.time_run(self.conf['time']['speed_solar'] + self.speed_mode * self.ra_jog_delta)
+                        else:
+                            print "RA - nahoru ON", self.ra_range[0]
+                            #self.motor_ra.Run(1, 100*self.speed_mode)
+                            self.motor_ra.GoToDir(self.ra_range[0], direction = 0)
 
                     elif 'RA_center1' == req:
                         print "RA - center"
@@ -189,7 +202,11 @@ class SolarLab(AromNode):
 
                     elif 'RA_M0' == req or 'RA_P0' == req:
                         print "RA - OFF"
-                        self.motor_ra.Float()
+                        if self.RA_JOG_VIA_TIME:
+                            self.ra_jog = 0
+                            self.time_run_nominal()
+                        else:
+                            self.motor_ra.Float()
 
                     elif 'DEC_M1' == req:
                         print "DEC - dolu ON", self.dec_range[1]
@@ -313,6 +330,26 @@ class SolarLab(AromNode):
         time.sleep(5)
         print("Ted se zacnu vypinat")
         os.system('poweroff')
+
+    def time_run(self, v):
+        """Jizda casove osy rychlosti v (jednotky jako speed_solar). Znamenko urcuje smer.
+        POZOR: mapovani znamenka na direction overeno jen pro bezny chod (Run(1, <zaporne>));
+        pri obraceni smeru overit na HW, pripadne prohodit 1/0."""
+        if abs(v) < 1e-9:
+            self.motor_time.Float()
+            return
+        d = 1 if v * self.conf['time']['speed_solar'] >= 0 else 0
+        self.motor_time.Run(d, v, speed_value=abs(int(v * 67.106)))
+
+    def time_run_nominal(self):
+        """Navrat casove osy na jizdu podle stavu tracking/time_mode (zrcadli tracking_toggle0)."""
+        if not self.tracking:
+            self.motor_time.Float()
+        elif self.time_mode == 1:
+            self.motor_time.Run(1, self.conf['time']['speed_solar'],
+                speed_value=abs(int(self.conf['time']['speed_solar'] * 67.106)))
+        else:
+            self.motor_time.Run(1, self.conf['time']['speed_night'])
 
     def reinitMotors(self):
         self.motor_ra = axis.axis(SPI = self.pymlab, SPI_CS = 0b0001, Direction = True, StepsPerUnit = 1, protocol = 'arom', arom_spi_name = 'mount_ra')

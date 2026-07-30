@@ -1,8 +1,9 @@
 {
     "time": {
-        "speed_solar": -33.4, 
-        "speed_night": -40.0
-    }, 
+        "speed_solar": -33.4,
+        "speed_night": -40.0,
+        "ra_jog_delta": 33.4
+    },
     "dec": {
         "last_pos": 26203, 
         "speed_3": 800, 
