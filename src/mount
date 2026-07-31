@@ -100,7 +100,7 @@ class SolarLab(AromNode):
 
         self.reinitMotors()
         # UVodni kalibrace... 
-        #self.calibration()
+        self.calibration()
 
         self.pub_dome.publish("%f;%f" %(self.dome_move_period, self.dome_move_time))
         self.pymlab(device="gpio_dome", method="config_ports", parameters=str(dict(port0 = 0x00, port1 = 0x00)))
@@ -343,9 +343,9 @@ class SolarLab(AromNode):
         except:
            print("Nepovedlo se zastavit hodinovy stroj")
 
-        #time.sleep(5)
-        #print("Ted se zacnu vypinat")
-        #os.system('poweroff')
+        time.sleep(5)
+        print("Ted se zacnu vypinat")
+        os.system('poweroff')
 
     def time_run(self, v):
         """Jizda casove osy rychlosti v (jednotky jako speed_solar). Znamenko urcuje smer.
