@@ -60,7 +60,7 @@ class SolarLab(AromNode):
         self.dec_range = self.conf['dec']['range']
 
         self.ra_jog = 0
-        self.ra_jog_delta = abs(float(self.conf['time'].get('ra_jog_delta', self.conf['time']['speed_solar'])))
+        self.ra_jog_delta = abs(float(self.conf['time'].get('ra_jog_delta', self.conf['time']['speed_solar'])))*3
 
 
         print("nastavit konfiguraci pro gpio")
@@ -87,7 +87,7 @@ class SolarLab(AromNode):
         self.sub_sysmsg = rospy.Subscriber('/syscmd', std_msgs.msg.String, self.sys_msg)
 
         self.set_feature('external',  {'feature': __file__+'.feature.hbs', 'id': 'mount_position', 'node_name': node_name, 'toppic': node_name+'/status'})
-        self.set_feature('hbstep_status__0',  {'id': 'motor_ra', 'name': 'Motor ra', 'node_name': node_name, 'toppic': node_name+'/motor_ra'})
+        self.set_feature('hbstep_status__0',  {'id': 'motor_ra', 'name': 'Motor Rra', 'node_name': node_name, 'toppic': node_name+'/motor_ra'})
         self.set_feature('hbstep_status__1',  {'id': 'motor_dec', 'name': 'Motor dec', 'node_name': node_name, 'toppic': node_name+'/motor_dec'})
         self.set_feature('hbstep_status__2',  {'id': 'motor_time', 'name': 'Motor time', 'node_name': node_name, 'toppic': node_name+'/motor_time'})
 
@@ -100,7 +100,7 @@ class SolarLab(AromNode):
 
         self.reinitMotors()
         # UVodni kalibrace... 
-        self.calibration()
+        #self.calibration()
 
         self.pub_dome.publish("%f;%f" %(self.dome_move_period, self.dome_move_time))
         self.pymlab(device="gpio_dome", method="config_ports", parameters=str(dict(port0 = 0x00, port1 = 0x00)))
@@ -194,8 +194,9 @@ class SolarLab(AromNode):
 
                     if 'RA_M1' == req:
                         if self.RA_JOG_VIA_TIME:
-                            self.ra_jog = -1
-                            self.time_run(self.conf['time']['speed_solar'] - self.speed_mode * self.ra_jog_delta)
+                            self.ra_jog = +1
+                            spd = self.conf['time']['speed_solar'] - self.speed_mode * self.speed_mode * self.ra_jog_delta
+                            self.time_run(spd)
                         else:
                             print "RA - dolu ON", self.ra_range[1]
                             #self.motor_ra.Run(0, 100*self.speed_mode)
@@ -203,8 +204,9 @@ class SolarLab(AromNode):
 
                     elif 'RA_P1' == req:
                         if self.RA_JOG_VIA_TIME:
-                            self.ra_jog = +1
-                            self.time_run(self.conf['time']['speed_solar'] + self.speed_mode * self.ra_jog_delta)
+                            self.ra_jog = -1
+                            spd = self.conf['time']['speed_solar'] + self.speed_mode * self.speed_mode * self.ra_jog_delta
+                            self.time_run(spd)
                         else:
                             print "RA - nahoru ON", self.ra_range[0]
                             #self.motor_ra.Run(1, 100*self.speed_mode)
@@ -341,22 +343,26 @@ class SolarLab(AromNode):
         except:
            print("Nepovedlo se zastavit hodinovy stroj")
 
-        time.sleep(5)
-        print("Ted se zacnu vypinat")
-        os.system('poweroff')
+        #time.sleep(5)
+        #print("Ted se zacnu vypinat")
+        #os.system('poweroff')
 
     def time_run(self, v):
         """Jizda casove osy rychlosti v (jednotky jako speed_solar). Znamenko urcuje smer.
         POZOR: mapovani znamenka na direction overeno jen pro bezny chod (Run(1, <zaporne>));
         pri obraceni smeru overit na HW, pripadne prohodit 1/0."""
+        print("Time speed", v)
         if abs(v) < 1e-9:
             self.motor_time.Float()
+            print("Time motor: Float")
             return
-        d = 1 if v * self.conf['time']['speed_solar'] >= 0 else 0
-        self.motor_time.Run(d, v, speed_value=abs(int(v * 67.106)))
+        d = True if v >= 0 else False
+        print("Time motor Run:", d, v, abs(int(v * 67.106)))
+        self.motor_time.Run(d, abs(v))
 
     def time_run_nominal(self):
         """Navrat casove osy na jizdu podle stavu tracking/time_mode (zrcadli tracking_toggle0)."""
+        print("Time normal")
         if not self.tracking:
             self.motor_time.Float()
         elif self.time_mode == 1:
@@ -411,7 +417,7 @@ class SolarLab(AromNode):
                        KVAL_RUN=0.15,
                        KVAL_DEC=0.15,
                        ACC = 50,
-                       DEC = 100,
+                       DEC = 500,
                        FS_SPD=3000,
                        STEP_MODE= axis.axis.STEP_MODE_1_128)
         self.motor_time.Float()
