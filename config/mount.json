@@ -1,15 +1,15 @@
 {
     "time": {
-        "speed_solar": -33.4,
-        "speed_night": -40.0,
-        "ra_jog_delta": 33.4
-    },
+        "ra_jog_delta": 33.4, 
+        "speed_solar": -32.13, 
+        "speed_night": -40.0
+    }, 
     "dec": {
-        "last_pos": 26203, 
+        "last_pos": 4206, 
         "speed_3": 800, 
         "speed_2": 700, 
         "speed_1": 600, 
-        "pos_update": 1622482257.198801, 
+        "pos_update": 1793281304.600423, 
         "range": [
             200, 
             60000
@@ -17,11 +17,11 @@
         "home": 17000
     }, 
     "ra": {
-        "last_pos": 30000, 
+        "last_pos": 60000, 
         "speed_3": 800, 
         "speed_2": 700, 
         "speed_1": 600, 
-        "pos_update": 1622482256.998189, 
+        "pos_update": 1793281304.363341, 
         "range": [
             200, 
             60000
@@ -30,6 +30,6 @@
     }, 
     "dome": {
         "length": 2.0, 
-        "sleep": 860.0
+        "sleep": 630.0
     }
 }
